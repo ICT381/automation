@@ -1,0 +1,24 @@
+---
+- name: Build, tag and push image to DockerHub
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become_user: jenkins
+  vars:
+    - jenkins_path: /var/lib/jenkins/workspace/
+    - pipeline_name: pipeline1
+  
+  ## test trigger
+
+  tasks:
+    - name: Build Image
+      command: docker build --no-cache -t ict381_staycation {{jenkins_path}}/{{pipeline_name}}/staycationX/
+
+    - name: Tag Image (staycationX)
+      command: docker tag ict381_staycation suss001/ict381_staycation
+
+    - name: Login to Dockerhub 
+      command: docker login -u USERNAME -p PASSWORD
+
+    - name: Push Image to Dockerhub
+      command: docker push suss001/ict381_staycation

@@ -1,63 +1,52 @@
 ---
 
-- name: Run docker containers
+- name: Run application with docker containers on deployment server
   hosts: tag_group_web
   gather_facts: false
   become: yes
   become_user: root
   become_method: sudo
+  vars:
+    jenkins_path: /var/lib/jenkins/workspace/
+    pipeline_name: pipeline1
 
   tasks:
-    - name: Install necessary software
+    - name: update cache
       apt:
-        name: "{{ item }}"
-        state: present
         update_cache: yes
-      loop:
-        - docker.io
 
-    - name: Install docker compose
-      get_url:
-        url : "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-Linux-x86_64"
-        dest: "/usr/local/bin/docker-compose"
-        mode: "0755"
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
 
-    - name: Start and enable Docker
-      service:
-        name: docker
-        state: started
-        enabled: yes
-  
-    - name: ensure that the known_hosts file is present
-      file:
-        path: /root/.ssh/known_hosts
-        owner: root
-        state: touch
+    - name: Add Docker repo
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu jammy stable
+        state: present
 
-    - name: copy user's key to remote machine
+    - name: Update apt cache and install docker
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+
+    - name: Copy dockerhub.yml from delivery machine to deployment machine
       copy:
-        src: /var/lib/jenkins/.ssh/id_rsa
-        dest: /root/.ssh/id_rsa
+        src: "{{jenkins_path}}/{{pipeline_name}}/StaycationX/dockerhub.yml"
+        dest: /root/dockerhub.yml
         owner: root
-        mode: '0400'
+        group: root
+        mode: '0644'
 
-    - name: add key to known_hosts file
-      shell: "ssh-keyscan -t rsa github.com > /root/.ssh/known_hosts"
-
-    - name: Git checkout dockerhub.yml from repo
-      git:
-        repo: 'git@github.com:USERNAME/staycationX.git'
-        dest: /opt/staycationX
-        version: nginx
-
-    - name: Stop running containers.
-      command: docker-compose down
+    - name: Stop running containers
+      command: docker compose -f dockerhub.yml down
       args:
-        chdir: /opt/staycationX
+        chdir: /root
     
     - name: Remove all images
-      shell: docker rmi -f $(docker images -a -q)
+      shell: docker rmi -f $(sudo docker images -a -q)
       ignore_errors: true
 
     - name: Run docker compose
-      command: docker-compose -f /opt/staycationX/dockerhub.yml up -d
+      command: docker compose -f /root/dockerhub.yml up -d

@@ -5,20 +5,93 @@
   gather_facts: false
   become_user: jenkins
   vars:
-    - jenkins_path: /var/lib/jenkins/workspace/
-    - pipeline_name: pipeline1
+    jenkins_path: /var/lib/jenkins/workspace/
+    pipeline_name: pipeline1
+    my_git_username: ENTER_YOUR_GIT_USERNAME_HERE
   
-  ## test trigger
-
   tasks:
-    - name: Build Image
-      command: docker build --no-cache -t ict381_staycation {{jenkins_path}}/{{pipeline_name}}/staycationX/
+    - name: Login to DockerHub
+      community.docker.docker_login:
+        username: DOCKER_USER
+        password: DOCKER_PASSWORD
 
-    - name: Tag Image (staycationX)
-      command: docker tag ict381_staycation suss001/ict381_staycation
+    - name: Stop running containers
+      command: docker compose -f dockerhub.yml down
+      args:
+        chdir: /opt/StaycationX
 
-    - name: Login to Dockerhub 
-      command: docker login -u USERNAME -p PASSWORD
+    - name: Get all Docker images
+      command: docker images --format "{{ '{{.Repository}}:{{.Tag}}' }}"
+      register: docker_images
 
-    - name: Push Image to Dockerhub
-      command: docker push suss001/ict381_staycation
+    - name: Set images to exclude
+      set_fact:
+        exclude_images:
+          - "node:16.20.2-alpine"
+          - "python:3.12"
+          - "nginx:latest"
+          - "mongo:latest"
+
+    - name: Find images to remove
+      set_fact:
+        images_to_remove: "{{ docker_images.stdout_lines | difference(exclude_images) }}"
+
+    - name: Remove existing Docker images excluding specific ones
+      community.docker.docker_image:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ images_to_remove }}"
+      when: item is defined
+
+    - name: Build StaycationX Image
+      community.docker.docker_image:
+        name: ict381_staycation
+        build:
+          path: "{{jenkins_path}}/{{pipeline_name}}/StaycationX/"
+        source: build
+        
+    - name: Tag and Push to repo for StaycationX
+      community.docker.docker_image:
+        name: ict381_staycation
+        repository: "{{my_git_username}}/ict381_staycation"
+        push: true
+        source: local
+      
+    - name: Build MongoDB Image
+      community.docker.docker_image:
+        name: ict381_mongo
+        build:
+          path: "{{jenkins_path}}/{{pipeline_name}}/StaycationX/"
+          dockerfile: DockerfileMongo
+        source: build
+       
+    - name: Tag and Push to repo for MongoDB
+      community.docker.docker_image:
+        name: ict381_mongo
+        repository: "{{my_git_username}}/ict381_mongo"
+        push: true
+        source: local
+        
+    - name: Build myReactApp Image
+      community.docker.docker_image:
+        name: ict381_myreactapp
+        build:
+          path: "{{jenkins_path}}/{{pipeline_name}}/myReactApp/"
+          dockerfile: DockerfilemyReactApp
+        source: build
+       
+    - name: Tag and Push to repo for myReactApp
+      community.docker.docker_image:
+        name: ict381_myreactapp
+        repository: "{{my_git_username}}/ict381_myreactapp"
+        push: true
+        source: local
+
+    - name: Prune system to conserve space
+      community.docker.docker_prune:
+        images: true
+        builder_cache: true
+        volumes: true
+        networks: true
+        containers: true
+      

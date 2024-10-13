@@ -70,6 +70,13 @@ resource "aws_security_group" "jenkins-sg" {
     cidr_blocks = [var.source_ip_block]
   }
 
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = [var.source_ip_block]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0

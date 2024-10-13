@@ -1,16 +1,16 @@
 variable "aws_access_key_id" {
   type    = string
-  default = ""
+  default = "PLACEHOLDER"
 }
 
 variable "aws_secret_access_key" {
   type    = string
-  default = ""
+  default = "PLACEHOLDER"
 }
 
 variable "aws_session_token" {
   type    = string
-  default = ""
+  default = "PLACEHOLDER"
 }
 
 variable "source_ip_block" {

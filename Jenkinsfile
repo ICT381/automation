@@ -12,10 +12,14 @@ pipeline {
             steps {
                 script {
                     if (params.Action == "apply"){
-                        git branch: 'main',credentialsId: 'my-keys', url: 'git@github.com:USERNAME/automation.git'
+                        git branch: 'dev',credentialsId: 'my-keys', url: 'git@github.com:USERNAME/automation.git'
 
-                        dir ('staycationX'){
-                            git branch: 'nginx', credentialsId: 'my-keys', url: 'git@github.com:USERNAME/staycationX.git'
+                        dir ('StaycationX'){
+                            git branch: 'nginx-1', credentialsId: 'my-keys', url: 'git@github.com:USERNAME/StaycationX.git'
+                        }
+
+                        dir ('myReactApp'){
+                            git branch: 'OneMap', credentialsId: 'my-keys', url: 'git@github.com:USERNAME/myReactApp.git'
                         }
                     }
                 }
@@ -26,7 +30,7 @@ pipeline {
             steps {
                 script {
                     if (params.Action == "apply") {
-                        sh 'ansible-playbook -i ansible/inventory ansible/build-docker.yaml'
+                        sh 'ansible-playbook ansible/build-docker.yaml'
                     }
                 }
             }

@@ -12,10 +12,10 @@ pipeline {
             steps {
                 script {
                     if (params.Action == "apply"){
-                        git branch: 'dev',credentialsId: 'my-keys', url: 'git@github.com:USERNAME/automation.git'
+                        git branch: 'main',credentialsId: 'my-keys', url: 'git@github.com:USERNAME/automation.git'
 
                         dir ('StaycationX'){
-                            git branch: 'nginx-1', credentialsId: 'my-keys', url: 'git@github.com:USERNAME/StaycationX.git'
+                            git branch: 'nginx', credentialsId: 'my-keys', url: 'git@github.com:USERNAME/StaycationX.git'
                         }
 
                         dir ('myReactApp'){

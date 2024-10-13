@@ -1,0 +1,111 @@
+---
+- name: Clone, build, tag and push images to DockerHub and run application using Docker Compose
+  hosts: jenkins
+  gather_facts: false
+  become: yes
+  become_user: root
+  become_method: sudo
+  vars:
+    my_git_username: ENTER_YOUR_GITHUB_USERNAME_HERE
+
+  tasks:
+    - name: Clone the StaycationX repository
+      git:
+        repo: "git@github.com:{{my_git_username}}/staycationX.git"
+        dest: /opt/StaycationX
+        version: nginx
+
+    - name: Clone the myReactApp repository
+      git:
+        repo: "git@github.com:{{my_git_username}}/myReactApp.git"
+        dest: /opt/myReactApp
+        version: OneMap
+
+    - name: Stop running containers
+      command: docker compose -f dockerhub.yml down
+      args:
+        chdir: /opt/StaycationX
+
+    - name: Get all Docker images
+      command: docker images --format "{{ '{{.Repository}}:{{.Tag}}' }}"
+      register: docker_images
+
+    - name: Set images to exclude
+      set_fact:
+        exclude_images:
+          - "node:16.20.2-alpine"
+          - "python:3.12"
+          - "nginx:latest"
+          - "mongo:latest"
+
+    - name: Find images to remove
+      set_fact:
+        images_to_remove: "{{ docker_images.stdout_lines | difference(exclude_images) }}"
+
+    - name: Remove existing Docker images excluding specific ones
+      community.docker.docker_image:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ images_to_remove }}"
+      when: item is defined
+
+    - name: Login to DockerHub
+      community.docker.docker_login:
+        username: DOCKER_USERNAME
+        password: DOCKER_PASSWORD
+
+    - name: Build StaycationX Image
+      community.docker.docker_image:
+        name: ict381_staycation
+        build:
+          path: /opt/StaycationX
+        source: build
+        
+    - name: Tag and Push to repo for StaycationX
+      community.docker.docker_image:
+        name: ict381_staycation
+        repository: "{{my_git_username}}/ict381_staycation"
+        push: true
+        source: local
+      
+    - name: Build MongoDB Image
+      community.docker.docker_image:
+        name: ict381_mongo
+        build:
+          path: /opt/StaycationX
+          dockerfile: DockerfileMongo
+        source: build
+       
+    - name: Tag and Push to repo for MongoDB
+      community.docker.docker_image:
+        name: ict381_mongo
+        repository: "{{my_git_username}}/ict381_mongo"
+        push: true
+        source: local
+        
+    - name: Build myReactApp Image
+      community.docker.docker_image:
+        name: ict381_myreactapp
+        build:
+          path: /opt/myReactApp
+          dockerfile: DockerfilemyReactApp
+        source: build
+       
+    - name: Tag and Push to repo for myReactApp
+      community.docker.docker_image:
+        name: ict381_myreactapp
+        repository: "{{my_git_username}}/ict381_myreactapp"
+        push: true
+        source: local
+       
+    - name: Prune system to conserve space
+      community.docker.docker_prune:
+        images: true
+        builder_cache: true
+        volumes: true
+        networks: true
+        containers: true
+
+    - name: Run docker compose
+      command: docker compose -f /opt/StaycationX/dockerhub.yml up -d
+

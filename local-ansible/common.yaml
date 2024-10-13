@@ -1,0 +1,55 @@
+---
+
+- name: Configure necessary software in EC2
+  hosts: jenkins
+  gather_facts: false
+  become: yes
+  become_user: root
+  become_method: sudo
+
+  tasks:
+    - name: Install necessary software
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - python3-pip
+        - gnupg
+        - software-properties-common
+        - unzip
+        - git
+    
+    - name: Install necessary libraries
+      pip:
+        name: "{{item}}"
+      loop:
+        - ansible
+        - docker
+
+    - name: Add Docker GPG key 
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repo
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu jammy stable
+        state: present
+
+    - name: Update apt cache and install docker
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+      
+    - name: copy user's private key to delivery machine for GitHub access
+      copy:
+        src: /home/ubuntu/.ssh/id_rsa
+        dest: /root/.ssh/id_rsa
+        owner: root
+        mode: '0400'
+       
+    - name: add GitHub SSH public key to known_hosts file
+      shell: "ssh-keyscan -t rsa github.com > /root/.ssh/known_hosts"
+    

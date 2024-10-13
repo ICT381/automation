@@ -1,0 +1,83 @@
+---
+
+- name: Install Jenkins
+  hosts: jenkins
+  gather_facts: false
+  become: yes
+  become_user: root
+  become_method: sudo
+
+  tasks:
+    - name: Install necessary software
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - openjdk-17-jdk  
+        - openjdk-17-jre  
+      
+    - name: Install boto3
+      pip:
+        name: boto3
+        state: present
+
+    - name: Download and unzip Terraform Binary
+      unarchive:
+        src: "https://releases.hashicorp.com/terraform/1.9.7/terraform_1.9.7_linux_amd64.zip"
+        dest: /usr/bin
+        remote_src: True
+
+    - name: Add Jenkins repo key 
+      apt_key:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+        state: present
+
+    - name: Add Jenkins repo
+      apt_repository:
+        repo: deb https://pkg.jenkins.io/debian-stable binary/
+        state: present
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+        update_cache: yes
+
+    - name: Add jenkins user to docker group
+      user:
+        name: jenkins
+        groups: docker
+        append: yes
+        state: present
+
+    - name: Reboot the remote EC2 machine
+      reboot:
+
+    - name: ensure that the ssh folder for jenkins is present
+      file:
+        path: /var/lib/jenkins/.ssh
+        owner: jenkins
+        group: jenkins
+        state: directory
+        mode: '0700'
+        recurse: true
+
+    - name: ensure that the known_host file for jenkins is present
+      file:
+        path: /var/lib/jenkins/.ssh/known_hosts
+        state: touch
+        owner: jenkins
+        group: jenkins
+        mode: '0600'
+
+    - name: copy user's private key for GitHub to delivery machine for jenkins user
+      copy:
+        src: /home/ubuntu/.ssh/id_rsa
+        dest: /var/lib/jenkins/.ssh/id_rsa
+        owner: jenkins
+        group: jenkins
+        mode: '0400'
+
+    - name: add Github SSH public key to known_hosts on delivery machine for jenkins user
+      shell: "ssh-keyscan -t rsa github.com > /var/lib/jenkins/.ssh/known_hosts"

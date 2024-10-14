@@ -7,7 +7,7 @@
   vars:
     jenkins_path: /var/lib/jenkins/workspace/
     pipeline_name: pipeline1
-    my_git_username: ENTER_YOUR_GIT_USERNAME_HERE
+    my_docker_username: ENTER_YOUR_DOCKERHUB_USERNAME_HERE
   
   tasks:
     - name: Login to DockerHub
@@ -53,7 +53,7 @@
     - name: Tag and Push to repo for StaycationX
       community.docker.docker_image:
         name: ict381_staycation
-        repository: "{{my_git_username}}/ict381_staycation"
+        repository: "{{my_docker_username}}/ict381_staycation"
         push: true
         source: local
       
@@ -68,7 +68,7 @@
     - name: Tag and Push to repo for MongoDB
       community.docker.docker_image:
         name: ict381_mongo
-        repository: "{{my_git_username}}/ict381_mongo"
+        repository: "{{my_docker_username}}/ict381_mongo"
         push: true
         source: local
         
@@ -83,7 +83,7 @@
     - name: Tag and Push to repo for myReactApp
       community.docker.docker_image:
         name: ict381_myreactapp
-        repository: "{{my_git_username}}/ict381_myreactapp"
+        repository: "{{my_docker_username}}/ict381_myreactapp"
         push: true
         source: local
 

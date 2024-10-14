@@ -6,18 +6,18 @@
   become_user: root
   become_method: sudo
   vars:
-    my_git_username: ENTER_YOUR_GITHUB_USERNAME_HERE
+    my_docker_username: ENTER_YOUR_DOCKERHUB_USERNAME_HERE
 
   tasks:
     - name: Clone the StaycationX repository
       git:
-        repo: "git@github.com:{{my_git_username}}/staycationX.git"
+        repo: "git@github.com:GIT_USERNAME/staycationX.git"
         dest: /opt/StaycationX
         version: nginx
 
     - name: Clone the myReactApp repository
       git:
-        repo: "git@github.com:{{my_git_username}}/myReactApp.git"
+        repo: "git@github.com:GIT_USERNAME/myReactApp.git"
         dest: /opt/myReactApp
         version: OneMap
 
@@ -64,7 +64,7 @@
     - name: Tag and Push to repo for StaycationX
       community.docker.docker_image:
         name: ict381_staycation
-        repository: "{{my_git_username}}/ict381_staycation"
+        repository: "{{my_docker_username}}/ict381_staycation"
         push: true
         source: local
       
@@ -79,7 +79,7 @@
     - name: Tag and Push to repo for MongoDB
       community.docker.docker_image:
         name: ict381_mongo
-        repository: "{{my_git_username}}/ict381_mongo"
+        repository: "{{my_docker_username}}/ict381_mongo"
         push: true
         source: local
         
@@ -94,7 +94,7 @@
     - name: Tag and Push to repo for myReactApp
       community.docker.docker_image:
         name: ict381_myreactapp
-        repository: "{{my_git_username}}/ict381_myreactapp"
+        repository: "{{my_docker_username}}/ict381_myreactapp"
         push: true
         source: local
        

@@ -18,7 +18,7 @@
     - name: Stop running containers
       command: docker compose -f dockerhub.yml down
       args:
-        chdir: /opt/StaycationX
+        chdir: "{{jenkins_path}}/{{pipeline_name}}/StaycationX"
 
     - name: Get all Docker images
       command: docker images --format "{{ '{{.Repository}}:{{.Tag}}' }}"
